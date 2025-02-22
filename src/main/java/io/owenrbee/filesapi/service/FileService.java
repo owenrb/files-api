@@ -3,6 +3,7 @@ package io.owenrbee.filesapi.service;
 import org.apache.tomcat.util.buf.StringUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.cache.annotation.CacheEvict;
 import org.springframework.cache.annotation.Cacheable;
 import org.springframework.stereotype.Service;
 
@@ -71,24 +72,7 @@ public class FileService {
 
         logger.info("Reading text file: " + fullpath);
 
-        File file = new File(fullpath);
-        if (!file.exists()) {
-            logger.error("File doesn't exist: " + fullpath);
-            return null;
-        }
-
-        if (file.isDirectory()) {
-            logger.error("Path is a directory: " + fullpath);
-            return null;
-        }
-
-        try {
-            if (isBinary(file)) {
-                logger.error("File is binary: " + fullpath);
-                return null;
-            }
-        } catch (IOException e) {
-            logger.error("Error reading file: " + fullpath, e);
+        if (!isTextFile(fullpath)) {
             return null;
         }
 
@@ -99,6 +83,23 @@ public class FileService {
         } catch (IOException e) {
             logger.error("Error reading file: " + fullpath, e);
             return null;
+        }
+
+    }
+
+    @CacheEvict(value = "file", key = "#p0")
+    public void saveTextfile(String fullpath, String body) {
+
+        logger.info("Writing text file: " + fullpath);
+
+        if (!isTextFile(fullpath)) {
+            return;
+        }
+
+        try {
+            Files.write(Path.of(fullpath), body.getBytes());
+        } catch (IOException e) {
+            logger.error("Unnable to save file: " + fullpath, e);
         }
 
     }
@@ -125,6 +126,32 @@ public class FileService {
         }
     }
 
+    public boolean isTextFile(String fullpath) {
+
+        File file = new File(fullpath);
+        if (!file.exists()) {
+            logger.error("File doesn't exist: " + fullpath);
+            return false;
+        }
+
+        if (file.isDirectory()) {
+            logger.error("Path is a directory: " + fullpath);
+            return false;
+        }
+
+        try {
+            if (isBinary(file)) {
+                logger.error("File is binary: " + fullpath);
+                return false;
+            }
+        } catch (IOException e) {
+            logger.error("Error reading file: " + fullpath, e);
+            return false;
+        }
+
+        return true;
+    }
+
     private static boolean isAllowedControlCharacter(int unsignedByte) {
         return unsignedByte == 0x09 || // Tab
                 unsignedByte == 0x0A || // Newline
@@ -132,5 +159,4 @@ public class FileService {
                 unsignedByte == 0x0C || // Form Feed
                 unsignedByte == 0x0D; // Carriage Return
     }
-
 }
