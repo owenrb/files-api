@@ -17,6 +17,10 @@ import org.springframework.web.servlet.HandlerMapping;
 
 import io.owenrbee.filesapi.model.FileVO;
 import io.owenrbee.filesapi.service.FileService;
+import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.media.ExampleObject;
+import io.swagger.v3.oas.annotations.responses.ApiResponse;
+import io.swagger.v3.oas.annotations.media.Content;
 import jakarta.servlet.http.HttpServletRequest;
 
 @RestController
@@ -32,16 +36,21 @@ public class FileController {
         this.fileService = fileService;
     }
 
-    @GetMapping("/pwd")
+    @Operation(summary = "Get present working directory")
+    @ApiResponse(responseCode = "200", description = "OK", content = @Content(examples = @ExampleObject("/User/username/data")))
+    @GetMapping(value = "/pwd", produces = MediaType.TEXT_PLAIN_VALUE)
     public String getPwd() {
+
         return pwd;
     }
 
+    @Operation(summary = "Get list of files and directories from working directory")
     @GetMapping("/list")
     public List<FileVO> listFiles() {
         return fileService.getFiles(pwd);
     }
 
+    @Operation(summary = "Get list of files and directories from a sub-directory")
     @GetMapping("/list/{directory}/**")
     public List<FileVO> listFiles(@PathVariable String directory, HttpServletRequest request) {
         final String path = request.getAttribute(HandlerMapping.PATH_WITHIN_HANDLER_MAPPING_ATTRIBUTE).toString();
@@ -60,6 +69,7 @@ public class FileController {
         return fileService.getFiles(pwd + "/" + subfolder);
     }
 
+    @Operation(summary = "Read text file content")
     @GetMapping(value = "/cat/{filename}/**", produces = MediaType.TEXT_PLAIN_VALUE)
     public String getTextFileContent(@PathVariable String filename, HttpServletRequest request) {
 
@@ -85,6 +95,7 @@ public class FileController {
         return content;
     }
 
+    @Operation(summary = "Update text file content")
     @PutMapping(value = "/cat/{filename}/**", produces = MediaType.TEXT_PLAIN_VALUE, consumes = MediaType.TEXT_PLAIN_VALUE)
     public String updateTextFileContent(@PathVariable String filename, @RequestBody String body,
             HttpServletRequest request) {
