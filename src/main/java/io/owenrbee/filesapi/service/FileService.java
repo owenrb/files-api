@@ -152,6 +152,11 @@ public class FileService {
         return true;
     }
 
+    @CacheEvict(cacheNames = { "files", "file" }, allEntries = true)
+    public void clearCache() {
+        logger.info("Clearing all caches");
+    }
+
     private static boolean isAllowedControlCharacter(int unsignedByte) {
         return unsignedByte == 0x09 || // Tab
                 unsignedByte == 0x0A || // Newline

@@ -126,4 +126,12 @@ public class FileController {
         return content;
     }
 
+    @Operation(summary = "Clear all cache")
+    @PutMapping("/clear")
+    public void clearCache() {
+
+        fileService.clearCache();
+
+    }
+
 }
