@@ -3,11 +3,14 @@ package io.owenrbee.filesapi.controller;
 import java.util.List;
 
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.http.HttpStatus;
+import org.springframework.http.MediaType;
 import org.springframework.util.AntPathMatcher;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.server.ResponseStatusException;
 import org.springframework.web.servlet.HandlerMapping;
 
 import io.owenrbee.filesapi.model.FileVO;
@@ -53,6 +56,31 @@ public class FileController {
         }
 
         return fileService.getFiles(pwd + "/" + subfolder);
+    }
+
+    @GetMapping(value = "/cat/{filename}/**", produces = MediaType.TEXT_PLAIN_VALUE)
+    public String getTextFileContent(@PathVariable String filename, HttpServletRequest request) {
+
+        final String path = request.getAttribute(HandlerMapping.PATH_WITHIN_HANDLER_MAPPING_ATTRIBUTE).toString();
+        final String bestMatchingPattern = request.getAttribute(HandlerMapping.BEST_MATCHING_PATTERN_ATTRIBUTE)
+                .toString();
+
+        String arguments = new AntPathMatcher().extractPathWithinPattern(bestMatchingPattern, path);
+
+        String filepath;
+        if (null != arguments && !arguments.isEmpty()) {
+            filepath = filename + "/" + arguments;
+        } else {
+            filepath = filename;
+        }
+
+        String content = fileService.readTextFile(pwd + "/" + filepath);
+
+        if (content == null) {
+            throw new ResponseStatusException(HttpStatus.NOT_FOUND);
+        }
+
+        return content;
     }
 
 }

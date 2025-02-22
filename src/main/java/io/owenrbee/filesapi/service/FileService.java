@@ -1,5 +1,6 @@
 package io.owenrbee.filesapi.service;
 
+import org.apache.tomcat.util.buf.StringUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.cache.annotation.Cacheable;
@@ -11,6 +12,8 @@ import java.io.File;
 import java.io.FileInputStream;
 import java.io.IOException;
 import java.io.InputStream;
+import java.nio.file.Files;
+import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -63,9 +66,40 @@ public class FileService {
         return filesAndDirectories;
     }
 
-    public String readFileContent(File file) {
+    @Cacheable("file")
+    public String readTextFile(String fullpath) {
 
-        return null;
+        logger.info("Reading text file: " + fullpath);
+
+        File file = new File(fullpath);
+        if (!file.exists()) {
+            logger.error("File doesn't exist: " + fullpath);
+            return null;
+        }
+
+        if (file.isDirectory()) {
+            logger.error("Path is a directory: " + fullpath);
+            return null;
+        }
+
+        try {
+            if (isBinary(file)) {
+                logger.error("File is binary: " + fullpath);
+                return null;
+            }
+        } catch (IOException e) {
+            logger.error("Error reading file: " + fullpath, e);
+            return null;
+        }
+
+        List<String> lines;
+        try {
+            lines = Files.readAllLines(Path.of(fullpath));
+            return StringUtils.join(lines, '\n');
+        } catch (IOException e) {
+            logger.error("Error reading file: " + fullpath, e);
+            return null;
+        }
 
     }
 
