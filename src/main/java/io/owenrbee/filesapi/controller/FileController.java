@@ -40,7 +40,7 @@ public class FileController {
         this.fileService = fileService;
     }
 
-    @Operation(summary = "Get present working directory")
+    @Operation(summary = "Get present working directory", tags = "current dir")
     @ApiResponse(responseCode = "200", description = "OK", content = @Content(examples = @ExampleObject("/User/username/data")))
     @GetMapping(value = "/pwd", produces = MediaType.TEXT_PLAIN_VALUE)
     public String getPwd() {
@@ -48,7 +48,7 @@ public class FileController {
         return pwd;
     }
 
-    @Operation(summary = "Get list of files and directories from working directory")
+    @Operation(summary = "Get list of files and directories from working directory", tags = "dir ops")
     @GetMapping("/list")
     public List<FileVO> listFiles(
             // optional query param - filter for folder only
@@ -64,7 +64,7 @@ public class FileController {
 
     }
 
-    @Operation(summary = "Get list of files and directories from a sub-directory", description = "`Note:` Unnecessary '__/**__' may appear at the end of the path when testing with Swagger UI. Test this resource URL directly using your browser")
+    @Operation(summary = "Get list of files and directories from a sub-directory", tags = "dir ops", description = "`Note:` Unnecessary '__/**__' may appear at the end of the path when testing with Swagger UI. Test this resource URL directly using your browser")
     @GetMapping("/list/{directory}/**")
     public List<FileVO> listFiles(@PathVariable String directory,
             // optional query param - filter for folder only
@@ -97,7 +97,7 @@ public class FileController {
                 .collect(Collectors.toList());
     }
 
-    @Operation(summary = "Read text file content", description = "`Note:` Unnecessary '__/**__' may appear at the end of the path when testing with Swagger UI. Test this resource URL directly using your browser.")
+    @Operation(summary = "Read text file content", tags = "file ops", description = "`Note:` Unnecessary '__/**__' may appear at the end of the path when testing with Swagger UI. Test this resource URL directly using your browser.")
     @ApiResponses({
             @ApiResponse(responseCode = "200", description = "OK", content = @Content(examples = @ExampleObject("The quick brown fox jumps over the lazy dog."))),
             @ApiResponse(responseCode = "204", description = "File is binary", content = @Content(examples = @ExampleObject(""))),
@@ -141,7 +141,7 @@ public class FileController {
         return content;
     }
 
-    @Operation(summary = "Update text file content", description = "`Note:` Unnecessary '__/**__' may appear at the end of the path when testing with Swagger UI. Test this resource URL directly using Postman or any other preferred REST client app.")
+    @Operation(summary = "Update text file content", tags = "file ops", description = "`Note:` Unnecessary '__/**__' may appear at the end of the path when testing with Swagger UI. Test this resource URL directly using Postman or any other preferred REST client app.")
     @ApiResponses({
             @ApiResponse(responseCode = "200", description = "OK", content = @Content(examples = @ExampleObject("The quick brown fox jumps over the lazy dog."))),
             @ApiResponse(responseCode = "304", description = "Not Modified: File is binary", content = @Content(examples = @ExampleObject(""))),
@@ -180,7 +180,7 @@ public class FileController {
         return content;
     }
 
-    @Operation(summary = "Clear all cache")
+    @Operation(summary = "Clear all cache", tags = "misc")
     @PutMapping("/clear")
     public void clearCache() {
 
