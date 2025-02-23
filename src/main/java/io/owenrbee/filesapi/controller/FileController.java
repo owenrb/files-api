@@ -1,6 +1,7 @@
 package io.owenrbee.filesapi.controller;
 
 import java.util.List;
+import java.util.stream.Collectors;
 
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.HttpStatus;
@@ -11,6 +12,7 @@ import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.server.ResponseStatusException;
 import org.springframework.web.servlet.HandlerMapping;
@@ -48,19 +50,34 @@ public class FileController {
 
     @Operation(summary = "Get list of files and directories from working directory")
     @GetMapping("/list")
-    public List<FileVO> listFiles() {
-        return fileService.getFiles(pwd);
+    public List<FileVO> listFiles(
+            // optional query param - filter for folder only
+            @RequestParam(required = false) Boolean folderOnly,
+            // optional query param - filter for binary files only
+            @RequestParam(required = false) Boolean binaryOnly) {
+
+        return fileService.getFiles(pwd).stream()
+                // process optional filtering
+                .filter(x -> folderOnly == null || x.isFolder() == folderOnly)
+                .filter(x -> binaryOnly == null || x.isBinary() == binaryOnly)
+                .collect(Collectors.toList());
+
     }
 
-    @Operation(summary = "Get list of files and directories from a sub-directory")
+    @Operation(summary = "Get list of files and directories from a sub-directory", description = "`Note:` Unnecessary '__/**__' may appear at the end of the path when testing with Swagger UI. Test this resource URL directly using your browser")
     @GetMapping("/list/{directory}/**")
-    public List<FileVO> listFiles(@PathVariable String directory, HttpServletRequest request) {
+    public List<FileVO> listFiles(@PathVariable String directory,
+            // optional query param - filter for folder only
+            @RequestParam(required = false) Boolean folderOnly,
+            // optional query param - filter for binary files only
+            @RequestParam(required = false) Boolean binaryOnly,
+            HttpServletRequest request) {
+
+        // some trick to get sub-folder/s path string
         final String path = request.getAttribute(HandlerMapping.PATH_WITHIN_HANDLER_MAPPING_ATTRIBUTE).toString();
         final String bestMatchingPattern = request.getAttribute(HandlerMapping.BEST_MATCHING_PATTERN_ATTRIBUTE)
                 .toString();
-
         String arguments = new AntPathMatcher().extractPathWithinPattern(bestMatchingPattern, path);
-
         String subfolder;
         if (null != arguments && !arguments.isEmpty()) {
             subfolder = directory + "/" + arguments;
@@ -68,10 +85,19 @@ public class FileController {
             subfolder = directory;
         }
 
-        return fileService.getFiles(pwd + "/" + subfolder);
+        // swagger-ui band-aid solution
+        if (subfolder.endsWith("/**")) {
+            subfolder = subfolder.replace("/**", "");
+        }
+
+        return fileService.getFiles(pwd + "/" + subfolder).stream()
+                // process optional filtering
+                .filter(x -> folderOnly == null || x.isFolder() == folderOnly)
+                .filter(x -> binaryOnly == null || x.isBinary() == binaryOnly)
+                .collect(Collectors.toList());
     }
 
-    @Operation(summary = "Read text file content")
+    @Operation(summary = "Read text file content", description = "`Note:` Unnecessary '__/**__' may appear at the end of the path when testing with Swagger UI. Test this resource URL directly using your browser.")
     @ApiResponses({
             @ApiResponse(responseCode = "200", description = "OK", content = @Content(examples = @ExampleObject("The quick brown fox jumps over the lazy dog."))),
             @ApiResponse(responseCode = "204", description = "File is binary", content = @Content(examples = @ExampleObject(""))),
@@ -80,6 +106,7 @@ public class FileController {
     public String getTextFileContent(@PathVariable String filename, HttpServletRequest request,
             HttpServletResponse response) {
 
+        // some trick to get sub-folders and file path string
         final String path = request.getAttribute(HandlerMapping.PATH_WITHIN_HANDLER_MAPPING_ATTRIBUTE).toString();
         final String bestMatchingPattern = request.getAttribute(HandlerMapping.BEST_MATCHING_PATTERN_ATTRIBUTE)
                 .toString();
@@ -91,6 +118,11 @@ public class FileController {
             filepath = filename + "/" + arguments;
         } else {
             filepath = filename;
+        }
+
+        // swagger-ui band-aid solution
+        if (filepath.endsWith("/**")) {
+            filepath = filepath.replace("/**", "");
         }
 
         String fullpath = pwd + "/" + filepath;
@@ -109,7 +141,7 @@ public class FileController {
         return content;
     }
 
-    @Operation(summary = "Update text file content")
+    @Operation(summary = "Update text file content", description = "`Note:` Unnecessary '__/**__' may appear at the end of the path when testing with Swagger UI. Test this resource URL directly using Postman or any other preferred REST client app.")
     @ApiResponses({
             @ApiResponse(responseCode = "200", description = "OK", content = @Content(examples = @ExampleObject("The quick brown fox jumps over the lazy dog."))),
             @ApiResponse(responseCode = "304", description = "Not Modified: File is binary", content = @Content(examples = @ExampleObject(""))),
