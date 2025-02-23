@@ -20,8 +20,10 @@ import io.owenrbee.filesapi.service.FileService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.media.ExampleObject;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
+import io.swagger.v3.oas.annotations.responses.ApiResponses;
 import io.swagger.v3.oas.annotations.media.Content;
 import jakarta.servlet.http.HttpServletRequest;
+import jakarta.servlet.http.HttpServletResponse;
 
 @RestController
 @RequestMapping("/api")
@@ -70,8 +72,13 @@ public class FileController {
     }
 
     @Operation(summary = "Read text file content")
+    @ApiResponses({
+            @ApiResponse(responseCode = "200", description = "OK", content = @Content(examples = @ExampleObject("The quick brown fox jumps over the lazy dog."))),
+            @ApiResponse(responseCode = "204", description = "File is binary", content = @Content(examples = @ExampleObject(""))),
+            @ApiResponse(responseCode = "404", content = @Content(examples = @ExampleObject(""))) })
     @GetMapping(value = "/cat/{filename}/**", produces = MediaType.TEXT_PLAIN_VALUE)
-    public String getTextFileContent(@PathVariable String filename, HttpServletRequest request) {
+    public String getTextFileContent(@PathVariable String filename, HttpServletRequest request,
+            HttpServletResponse response) {
 
         final String path = request.getAttribute(HandlerMapping.PATH_WITHIN_HANDLER_MAPPING_ATTRIBUTE).toString();
         final String bestMatchingPattern = request.getAttribute(HandlerMapping.BEST_MATCHING_PATTERN_ATTRIBUTE)
@@ -86,16 +93,27 @@ public class FileController {
             filepath = filename;
         }
 
-        String content = fileService.readTextFile(pwd + "/" + filepath);
+        String fullpath = pwd + "/" + filepath;
+        String content = fileService.readTextFile(fullpath);
 
         if (content == null) {
-            throw new ResponseStatusException(HttpStatus.NOT_FOUND);
+
+            if (fileService.isBinary(fullpath)) {
+                response.setStatus(HttpStatus.NO_CONTENT.value());
+                return "";
+            } else {
+                throw new ResponseStatusException(HttpStatus.NOT_FOUND);
+            }
         }
 
         return content;
     }
 
     @Operation(summary = "Update text file content")
+    @ApiResponses({
+            @ApiResponse(responseCode = "200", description = "OK", content = @Content(examples = @ExampleObject("The quick brown fox jumps over the lazy dog."))),
+            @ApiResponse(responseCode = "304", description = "Not Modified: File is binary", content = @Content(examples = @ExampleObject(""))),
+            @ApiResponse(responseCode = "404", content = @Content(examples = @ExampleObject(""))) })
     @PutMapping(value = "/cat/{filename}/**", produces = MediaType.TEXT_PLAIN_VALUE, consumes = MediaType.TEXT_PLAIN_VALUE)
     public String updateTextFileContent(@PathVariable String filename, @RequestBody String body,
             HttpServletRequest request) {
@@ -120,7 +138,11 @@ public class FileController {
         String content = fileService.readTextFile(fullpath);
 
         if (content == null) {
-            throw new ResponseStatusException(HttpStatus.NOT_FOUND);
+            if (fileService.isBinary(fullpath)) {
+                throw new ResponseStatusException(HttpStatus.NOT_MODIFIED);
+            } else {
+                throw new ResponseStatusException(HttpStatus.NOT_FOUND);
+            }
         }
 
         return content;

@@ -104,7 +104,22 @@ public class FileService {
 
     }
 
+    public boolean isBinary(String fullpath) {
+
+        try {
+            boolean response = isBinary(new File(fullpath));
+
+            logger.info("Path is binary: {} --> {}", fullpath, response);
+
+            return response;
+        } catch (IOException e) {
+            logger.error("Binary file check error: " + fullpath, e);
+            return false;
+        }
+    }
+
     public boolean isBinary(File file) throws IOException {
+
         try (InputStream in = new FileInputStream(file)) {
             byte[] buffer = new byte[4096];
             int bytesRead = in.read(buffer);
@@ -122,6 +137,8 @@ public class FileService {
                     return true;
                 }
             }
+
+            in.close();
             return false;
         }
     }
