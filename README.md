@@ -4,7 +4,7 @@ File Manager API
 
 ## Requirements
 
-- Java JDK (17 recommended)
+- Java JDK 17 (minimum requirement for Spring Boot 3)
 - Apache Maven
 
 ## Configuration

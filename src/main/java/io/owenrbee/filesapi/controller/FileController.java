@@ -90,7 +90,8 @@ public class FileController {
             subfolder = subfolder.replace("/**", "");
         }
 
-        return fileService.getFiles(pwd + "/" + subfolder).stream()
+        return fileService.getFiles(pwd + "/" + subfolder.replaceAll("%20", " "))
+                .stream()
                 // process optional filtering
                 .filter(x -> folderOnly == null || x.isFolder() == folderOnly)
                 .filter(x -> binaryOnly == null || x.isBinary() == binaryOnly)
@@ -125,7 +126,7 @@ public class FileController {
             filepath = filepath.replace("/**", "");
         }
 
-        String fullpath = pwd + "/" + filepath;
+        String fullpath = pwd + "/" + filepath.replaceAll("%20", " ");
         String content = fileService.readTextFile(fullpath);
 
         if (content == null) {
@@ -163,7 +164,7 @@ public class FileController {
             filepath = filename;
         }
 
-        String fullpath = pwd + "/" + filepath;
+        String fullpath = pwd + "/" + filepath.replaceAll("%20", " ");
 
         fileService.saveTextfile(fullpath, body);
 
